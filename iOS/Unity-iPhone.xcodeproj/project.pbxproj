@@ -214,10 +214,9 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				E37F025A16EA1B38002A3176 /* Patches */,
 				E37F024D16EA1436002A3176 /* libpd.xcodeproj */,
 				E37F024916EA11E2002A3176 /* libpd extra externals */,
-				E35C0C8C16E9A43600A4A468 /* test.pd */,
-				E35C0C8A16E99B5000A4A468 /* BasicSynth.pd */,
 				56BCBA380FCF049A0030C3B2 /* SystemConfiguration.framework */,
 				5692F3DC0FA9D8E500EBA2F1 /* CoreLocation.framework */,
 				5682F4B10F3B34FF007A219C /* MediaPlayer.framework */,
@@ -335,6 +334,15 @@
 				E37F025516EA1436002A3176 /* libpd-osx.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E37F025A16EA1B38002A3176 /* Patches */ = {
+			isa = PBXGroup;
+			children = (
+				E35C0C8C16E9A43600A4A468 /* test.pd */,
+				E35C0C8A16E99B5000A4A468 /* BasicSynth.pd */,
+			);
+			name = Patches;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
