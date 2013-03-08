@@ -7,7 +7,7 @@
 @class PdAudioController;
 
 extern "C" {
-    extern void lrshift_tilde_setup(void);
+//    extern void lrshift_tilde_setup(void);
 //    extern void argument_setup(void);
 //    extern void phasorshot_tilde_setup(void);
 //    extern void path_setup(void);
@@ -70,7 +70,7 @@ extern "C" {
         
         [PdBase setDelegate:dispatcher];
         
-        lrshift_tilde_setup();
+//        lrshift_tilde_setup();
 //        argument_setup();
 //        phasorshot_tilde_setup();
 //        path_setup();
