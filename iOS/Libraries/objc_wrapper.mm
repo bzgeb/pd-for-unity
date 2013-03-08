@@ -1,10 +1,7 @@
-//#import "PdBase.h"
-//#import "PdDispatcher.h"
+#import "PdBase.h"
+#import "PdDispatcher.h"
+#import "PdAudioController.h"
 #import "Listener.h"
-
-@class PdBase;
-@class PdDispatcher;
-@class PdAudioController;
 
 extern "C" {
 //    extern void lrshift_tilde_setup(void);
