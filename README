@@ -1,0 +1,6 @@
+After cloning run:
+
+git submodule init
+git submodule update
+
+to install the libpd submodule.
