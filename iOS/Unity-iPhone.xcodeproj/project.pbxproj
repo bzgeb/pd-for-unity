@@ -506,7 +506,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Classes/iPhone_target_Prefix.pch;
 				GCC_USE_INDIRECT_FUNCTION_CALLS = NO;
-				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../libpd/pure-data\"/**";
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/../libpd/pure-data\"/**",
+					"\"$(SRCROOT)/../libpd/objc\"/**",
+				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
@@ -537,7 +540,10 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Classes/iPhone_target_Prefix.pch;
-				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../libpd/pure-data\"/**";
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/../libpd/pure-data\"/**",
+					"\"$(SRCROOT)/../libpd/objc\"/**",
+				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (

@@ -1234,7 +1234,7 @@ mono_image_table:
 
 	.long 3
 	.asciz "Assembly-CSharp-firstpass"
-	.asciz "62F3689F-347C-4415-8B2E-DD9BC1727318"
+	.asciz "20CB658D-584C-45F2-A35B-2F51E5858D70"
 	.asciz ""
 	.asciz ""
 	.align 3
@@ -1273,7 +1273,7 @@ mono_aot_file_info:
 .text
 	.align 2
 mono_assembly_guid:
-	.asciz "62F3689F-347C-4415-8B2E-DD9BC1727318"
+	.asciz "20CB658D-584C-45F2-A35B-2F51E5858D70"
 .text
 	.align 2
 mono_aot_version:
