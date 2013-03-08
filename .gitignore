@@ -1,0 +1,15 @@
+Library/*
+Temp/*
+*/DerivedData/*
+*.booproj
+*.csproj
+*.sln
+*.userprefs
+*.pidb
+*.unityproj
+.DS_Store
+*.xcuserstate
+*.xcuserdatad
+*.apk
+*.pbxuser
+*.app
