@@ -3,6 +3,9 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 public class PureData {
+	#if UNITY_ANDROID
+	static AndroidJavaClass PdBase;
+	#endif
 
 	/* Interface to native implementation */
 	[DllImport ("__Internal")]
@@ -42,8 +45,12 @@ public class PureData {
 	
 	public static void openFile(string filename)
 	{
-		if (Application.platform != RuntimePlatform.OSXEditor)
-			_openFile(filename.ToCharArray(), filename.Length * 2);
+		#if UNITY_IPHONE
+			if (Application.platform != RuntimePlatform.OSXEditor)
+				_openFile(filename.ToCharArray(), filename.Length * 2);
+		#elif UNITY_ANDROID
+			int handle = PdBase.CallStatic<int>("openPatch", filename);
+		#endif
 	}
 	
 	public static void closeFile(string filename)
@@ -54,14 +61,22 @@ public class PureData {
 	
 	public static void initPd()
 	{
-		if (Application.platform != RuntimePlatform.OSXEditor)
-			_initPd();
+		#if UNITY_IPHONE
+			if (Application.platform != RuntimePlatform.OSXEditor)
+				_initPd();
+		#elif UNITY_ANDROID
+			PdBase = new AndroidJavaClass("org.puredata.core.PdBase");	
+		#endif
 	}
 	
 	public static void startAudio()
 	{
+		#if UNITY_IPHONE
 		if (Application.platform != RuntimePlatform.OSXEditor)
 			_startAudio();
+		#elif UNITY_ANDROID
+			PdBase.CallStatic("startAudio");
+		#endif
 	}
 	
 	public static void sendBangToReceiver(string receiver)
