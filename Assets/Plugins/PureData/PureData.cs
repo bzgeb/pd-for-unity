@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 public class PureData {
 	#if UNITY_ANDROID
-	static AndroidJavaClass PdBase;
+	static AndroidJavaObject PdWrapper;
 	#endif
 
 	/* Interface to native implementation */
@@ -49,7 +49,8 @@ public class PureData {
 			if (Application.platform != RuntimePlatform.OSXEditor)
 				_openFile(filename.ToCharArray(), filename.Length * 2);
 		#elif UNITY_ANDROID
-			int handle = PdBase.CallStatic<int>("openPatch", filename);
+			PdWrapper.Call( "openFile", filename );
+			// int handle = PdBase.CallStatic<int>("openPatch", filename);
 		#endif
 	}
 	
@@ -65,7 +66,11 @@ public class PureData {
 			if (Application.platform != RuntimePlatform.OSXEditor)
 				_initPd();
 		#elif UNITY_ANDROID
-			PdBase = new AndroidJavaClass("org.puredata.core.PdBase");	
+			AndroidJavaClass jc = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+			AndroidJavaObject jo = jc.GetStatic<AndroidJavaObject>("currentActivity"); 
+
+			//Initialize the Wrapper object with the current activity
+			PdWrapper = new AndroidJavaObject( "org.puredata.android.unity.Wrapper", jo );
 		#endif
 	}
 	
@@ -75,7 +80,7 @@ public class PureData {
 		if (Application.platform != RuntimePlatform.OSXEditor)
 			_startAudio();
 		#elif UNITY_ANDROID
-			PdBase.CallStatic("startAudio");
+			// PdBase.CallStatic("startAudio");
 		#endif
 	}
 	
