@@ -71,16 +71,17 @@ public class PureData {
 
 			//Initialize the Wrapper object with the current activity
 			PdWrapper = new AndroidJavaObject( "org.puredata.android.unity.Wrapper", jo );
+			PdWrapper.Call("initPd");
 		#endif
 	}
 	
 	public static void startAudio()
 	{
 		#if UNITY_IPHONE
-		if (Application.platform != RuntimePlatform.OSXEditor)
-			_startAudio();
+			if (Application.platform != RuntimePlatform.OSXEditor)
+				_startAudio();
 		#elif UNITY_ANDROID
-			// PdBase.CallStatic("startAudio");
+			PdWrapper.Call("startAudio");
 		#endif
 	}
 	
@@ -92,8 +93,12 @@ public class PureData {
 	
 	public static void sendFloat(float aValue, string receiver)
 	{
-		if (Application.platform != RuntimePlatform.OSXEditor)
-			_sendFloat(aValue, receiver.ToCharArray(), receiver.Length * 2);
+		#if UNITY_IPHONE
+			if (Application.platform != RuntimePlatform.OSXEditor)
+				_sendFloat(aValue, receiver.ToCharArray(), receiver.Length * 2);
+		#elif UNITY_ANDROID
+			PdWrapper.Call( "sendFloat", aValue, receiver );
+		#endif
 	}
 	
 	public static void subscribe(string symbol, string objectName, string methodName)
