@@ -55,16 +55,29 @@ public class Wrapper {
 		PdBase.sendFloat( receiver, f );
 	}
 	
+	public void sendBang( String receiver ) {
+		PdBase.sendBang( receiver );
+	}
+	
+	public void sendSymbol( String symbol, String receiver ) {
+		PdBase.sendSymbol( receiver, symbol );
+	}
+	
+	public void subscribe( String symbol, String unityObject, String unityMethod ) {
+		
+	}
+	
+	public void unsubscribe( String symbol ) {
+		
+	}
+	
 	public void startAudio() {
 		try {
-//			int srate = PdBase.suggestSampleRate();
 			int srate = AudioParameters.suggestSampleRate();
-//			int nic = PdBase.suggestInputChannels();
-			int nic = AudioParameters.suggestInputChannels();
-//			int noc = PdBase.suggestOutputChannels();
+//			int nic = AudioParameters.suggestInputChannels();
 			int noc = AudioParameters.suggestOutputChannels();
-			float millis = 50.0f;
-			int tpb = (int) (0.001f * millis * srate / PdBase.blockSize()) + 1;
+//			float millis = 50.0f;
+//			int tpb = (int) (0.001f * millis * srate / PdBase.blockSize()) + 1;
 			
 			PdAudio.initAudio(srate, 0, noc, 1, true);
 			PdAudio.startAudio(activity);
@@ -73,12 +86,15 @@ public class Wrapper {
 		}
 	}
 	
+	public void pauseAudio() {
+		PdBase.pauseAudio();
+	}
+	
+	public void stopAudio() {
+		PdAudio.stopAudio();
+	}
+	
 	public void initPd() {
-//		PdPreferences.initPreferences(activity.getApplicationContext());
-//		PreferenceManager.getDefaultSharedPreferences(activity.getApplicationContext()).registerOnSharedPreferenceChangeListener(activity);
-//		if (!activity.bindService(new Intent(activity, PdService.class), pdConnection, Activity.BIND_AUTO_CREATE)) {
-//			Log.e("Unity", "Failed to bind service");
-//		}
 		AudioParameters.init(activity);
 		Log.d("Unity", "Init Pd");
 	}

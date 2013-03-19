@@ -31,6 +31,16 @@ public class PureData {
 	{
 		Platform.startAudio();
 	}
+
+	public static void pauseAudio()
+	{
+		Platform.pauseAudio();	
+	}
+
+	public static void stopAudio()
+	{
+		Platform.stopAudio();
+	}
 	
 	public static void sendBangToReceiver(string receiver)
 	{
