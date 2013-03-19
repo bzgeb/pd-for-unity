@@ -56,8 +56,12 @@ public class PureData {
 	
 	public static void closeFile(string filename)
 	{
-		if (Application.platform != RuntimePlatform.OSXEditor)
-			_closeFile(filename.ToCharArray(), filename.Length * 2);
+		#if UNITY_IPHONE
+			if (Application.platform != RuntimePlatform.OSXEditor)
+				_closeFile(filename.ToCharArray(), filename.Length * 2);
+		#elif UNITY_ANDROID
+			PdWrapper.Call( "closeFile", filename );
+		#endif
 	}
 	
 	public static void initPd()
