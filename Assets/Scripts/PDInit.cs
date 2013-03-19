@@ -6,7 +6,7 @@ public class PDInit : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		PureData.initPd();
-		PureData.openFile("test.pd");
+		PureData.openFile("basicsynth.pd");
 		PureData.startAudio();
 	}
 	
