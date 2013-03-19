@@ -2,7 +2,9 @@ adb=/Applications/adt-bundle-mac-x86_64-20130219/sdk/platform-tools/adb
 pdforunity=Android/PdForUnity/bin/pdforunity.jar
 unity=/Applications/Unity/Unity.app/Contents/MacOS/Unity
 
-install: apk
+all: apk install
+
+install:
 	$(adb) install -r Android.apk
 
 log:
