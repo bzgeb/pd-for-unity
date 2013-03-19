@@ -70,7 +70,7 @@ public class PureData {
 			AndroidJavaObject jo = jc.GetStatic<AndroidJavaObject>("currentActivity"); 
 
 			//Initialize the Wrapper object with the current activity
-			PdWrapper = new AndroidJavaObject( "org.puredata.android.unity.Wrapper", jo );
+			PdWrapper = new AndroidJavaObject( "com.bronsonzgeb.android.unity.Wrapper", jo );
 			PdWrapper.Call("initPd");
 		#endif
 	}
