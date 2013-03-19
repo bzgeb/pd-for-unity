@@ -9,10 +9,4 @@ public class PDInit : MonoBehaviour {
 		PureData.openFile("basicsynth.pd");
 		PureData.startAudio();
 	}
-	
-	 void Update() {
-	 	if ( Input.touchCount > 0 ) {
-	 		PureData.sendFloat(Random.Range(40, 127), "note");
-	 	}
-	 }
 }
