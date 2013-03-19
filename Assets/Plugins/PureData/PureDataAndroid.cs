@@ -18,15 +18,23 @@ public class PureDataAndroid {
 
         //Initialize the Wrapper object with the current activity
         PdWrapper = new AndroidJavaObject( "com.bronsonzgeb.android.unity.Wrapper", jo );
-        PdWrapper.Call("initPd");
+        PdWrapper.Call( "initPd" );
     }
 
     public static void startAudio() {
-        PdWrapper.Call("startAudio");
+        PdWrapper.Call( "startAudio" );
+    }
+
+    public static void pauseAudio() {
+        PdWrapper.Call( "pauseAudio" );
+    }
+
+    public static void stopAudio() {
+        PdWrapper.Call( "stopAudio" );
     }
 
     public static void sendBangToReceiver( string receiver ) {
-
+        PdWrapper.Call( "sendBang", receiver );
     }
 
     public static void sendFloat( float aValue, string receiver ) {
@@ -38,14 +46,12 @@ public class PureDataAndroid {
     }
 
     public static void sendSymbolToReceiver( string symbol, string receiver ) {
-
+        PdWrapper.Call( "sendSymbol", symbol, receiver );
     }
 
     public static void sendMessageToReceiver( string message, ArrayList arguments, string receiver ) {
-
     }
 
     public static void sendListToReceiver( ArrayList list, string receiver ) {
-
     }
 }
