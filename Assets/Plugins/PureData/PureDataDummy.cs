@@ -18,6 +18,14 @@ public class PureDataDummy {
         Debug.Log("startAudio Not Implemented");
     }
 
+    public static void pauseAudio() {
+        Debug.Log("pauseAudio Not Implemented");
+    }
+
+    public static void stopAudio() {
+        Debug.Log("stopAudio Not Implemented");
+    }
+
     public static void sendBangToReceiver( string receiver ) {
         Debug.Log("sendBangToReceiver Not Implemented");
     }
