@@ -58,6 +58,14 @@ public class PureDataIOS {
             _startAudio();
     }
 
+    public static void pauseAudio() {
+        Debug.Log("pauseAudio Not Implemented");
+    }
+
+    public static void stopAudio() {
+        Debug.Log("stopAudio Not Implemented");
+    }
+
     public static void sendBangToReceiver( string receiver ) {
         if (Application.platform != RuntimePlatform.OSXEditor)
             _sendBangToReceiver(receiver.ToCharArray(), receiver.Length * 2);
