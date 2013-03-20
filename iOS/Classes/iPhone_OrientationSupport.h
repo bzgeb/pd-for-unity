@@ -24,7 +24,6 @@ void                    UnitySetScreenOrientation(ScreenOrientation orientation)
 CGAffineTransform       TransformForOrientation( ScreenOrientation curOrient );
 CGRect                  ContentRectForOrientation( ScreenOrientation orient );
 
-ScreenOrientation       QueryInitialOrientation(UIViewController* root);
 void                    OrientView(UIView* view, ScreenOrientation target);
 
 

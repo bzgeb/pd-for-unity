@@ -84,26 +84,6 @@ ScreenOrientation ConvertToUnityScreenOrientation(UIInterfaceOrientation hwOrien
     return unityScreenOrient;
 }
 
-ScreenOrientation QueryInitialOrientation(UIViewController* root)
-{
-    ScreenOrientation ret = orientationUnknown;
-
-    NSString* initialOrientation = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"UIInterfaceOrientation"];
-    if( [initialOrientation isEqualToString: @"UIInterfaceOrientationPortrait"] == YES )
-        ret = portrait;
-    else if( [initialOrientation isEqualToString: @"UIInterfaceOrientationPortraitUpsideDown"] == YES )
-        ret = portraitUpsideDown;
-    else if( [initialOrientation isEqualToString: @"UIInterfaceOrientationLandscapeLeft"] == YES )
-        ret = landscapeRight;
-    else if( [initialOrientation isEqualToString: @"UIInterfaceOrientationLandscapeRight"] == YES )
-        ret = landscapeLeft;
-
-    if(ret == orientationUnknown)
-        ret = ConvertToUnityScreenOrientation(root.interfaceOrientation, 0);
-
-    return ret;
-}
-
 void OrientView(UIView* view, ScreenOrientation target)
 {
     view.transform  = TransformForOrientation(target);

@@ -21,17 +21,14 @@ static UIView*              _parent  = nil;
 
 @end
 
-void ShowActivityIndicator(UIView* parent)
+void ShowActivityIndicator(UIView* parent, int style)
 {
     if(_activityIndicator != nil)
         return;
 
-    extern int UnityGetShowActivityIndicatorOnLoading();
-
-    const int activityIndicatorStyle = UnityGetShowActivityIndicatorOnLoading();
-    if( activityIndicatorStyle >= 0)
+    if(style >= 0)
     {
-        _activityIndicator = [[ActivityIndicator alloc] initWithActivityIndicatorStyle:(UIActivityIndicatorViewStyle)activityIndicatorStyle];
+        _activityIndicator = [[ActivityIndicator alloc] initWithActivityIndicatorStyle:(UIActivityIndicatorViewStyle)style];
         SetScreenFactorFromScreen(_activityIndicator);
     }
 
@@ -41,6 +38,12 @@ void ShowActivityIndicator(UIView* parent)
         [_parent addSubview: _activityIndicator];
         [_activityIndicator startAnimating];
     }
+}
+
+void ShowActivityIndicator(UIView* parent)
+{
+    extern int UnityGetShowActivityIndicatorOnLoading();
+    ShowActivityIndicator(parent, UnityGetShowActivityIndicatorOnLoading());
 }
 
 void HideActivityIndicator()

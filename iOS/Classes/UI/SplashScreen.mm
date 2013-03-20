@@ -1,20 +1,25 @@
 
 #include "SplashScreen.h"
 #include "iPhone_View.h"
+#include "UnityViewControllerBase.h"
 #include "iPhone_OrientationSupport.h"
 
-#include "objc/runtime.h"
-#include <stdlib.h>
 
 static SplashScreen*            _splash      = nil;
 static SplashScreenController*  _controller  = nil;
-static ScreenOrientation        _curOrient   = orientationUnknown;
 
-static void OrientSplashPhone();
+// we will create and show splash before unity is inited, so we can use only plist settings
+static bool     _canRotateToPortrait            = false;
+static bool     _canRotateToPortraitUpsideDown  = false;
+static bool     _canRotateToLandscapeLeft       = false;
+static bool     _canRotateToLandscapeRight      = false;
+static bool     _shouldAutorotate               = false;
+
+static BOOL ShouldAutorotateToInterfaceOrientation_SplashImpl(id, SEL, UIInterfaceOrientation);
 
 @implementation SplashScreen
 
-- (id) initWithFrame:(CGRect)frame
+- (id)initWithFrame:(CGRect)frame
 {
     if( (self = [super initWithFrame:frame]) )
     {
@@ -41,20 +46,16 @@ static void OrientSplashPhone();
 
     if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPhone)
     {
-        bool devicePortrait  = UIDeviceOrientationIsPortrait(orient);
-        bool deviceLandscape = UIDeviceOrientationIsLandscape(orient);
+        bool orientPortrait  = (orient == portrait || orient == portraitUpsideDown);
+        bool orientLandscape = (orient == landscapeLeft || orient == landscapeRight);
 
-        NSArray* supportedOrientation = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"UISupportedInterfaceOrientations"];
-        bool rotateToPortrait  =   [supportedOrientation containsObject: @"UIInterfaceOrientationPortrait"]
-                                || [supportedOrientation containsObject: @"UIInterfaceOrientationPortraitUpsideDown"];
-        bool rotateToLandscape =   [supportedOrientation containsObject: @"UIInterfaceOrientationLandscapeLeft"]
-                                || [supportedOrientation containsObject: @"UIInterfaceOrientationLandscapeRight"];
-
+        bool rotateToPortrait  = _canRotateToPortrait || _canRotateToPortraitUpsideDown;
+        bool rotateToLandscape = _canRotateToLandscapeLeft || _canRotateToLandscapeRight;
 
         needOrientedSplash = true;
-        if (devicePortrait && rotateToPortrait)
+        if (orientPortrait && rotateToPortrait)
             needPortraitSplash = true;
-        else if (deviceLandscape && rotateToLandscape)
+        else if (orientLandscape && rotateToLandscape)
             needPortraitSplash = false;
         else if (rotateToPortrait)
             needPortraitSplash = true;
@@ -97,8 +98,15 @@ static void OrientSplashPhone();
 
 - (void)create:(UIWindow*)window
 {
+    NSArray* supportedOrientation = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"UISupportedInterfaceOrientations"];
+
+    _shouldAutorotate               = [supportedOrientation count] > 1;
+    _canRotateToPortrait            = [supportedOrientation containsObject: @"UIInterfaceOrientationPortrait"];
+    _canRotateToPortraitUpsideDown  = [supportedOrientation containsObject: @"UIInterfaceOrientationPortraitUpsideDown"];
+    _canRotateToLandscapeLeft       = [supportedOrientation containsObject: @"UIInterfaceOrientationLandscapeRight"];
+    _canRotateToLandscapeRight      = [supportedOrientation containsObject: @"UIInterfaceOrientationLandscapeLeft"];
+
     _splash   = [[SplashScreen alloc] initWithFrame: [[UIScreen mainScreen] bounds]];
-    _curOrient = orientationUnknown;
 
     SetScreenFactorFromScreen(_splash);
     if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPhone)
@@ -114,60 +122,38 @@ static void OrientSplashPhone();
     window.rootViewController = self;
     [window bringSubviewToFront: _splash];
 
-    if(_curOrient == orientationUnknown)
-        _curOrient = QueryInitialOrientation(self);
+    ScreenOrientation orient = ConvertToUnityScreenOrientation(self.interfaceOrientation, 0);
+    [_splash updateOrientation: orient];
 
-    [_splash updateOrientation: _curOrient];
-
-    ScreenOrientation viewOrient = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone ? portrait : _curOrient;
-    _splash.transform = TransformForOrientation(viewOrient);
-    _splash.bounds = ContentRectForOrientation(viewOrient);
+    ScreenOrientation viewOrient = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone ? portrait : orient;
+    OrientView(_splash, viewOrient);
 }
 
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
-    _curOrient = ConvertToUnityScreenOrientation(toInterfaceOrientation, 0);
     if(UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPhone)
-        [_splash updateOrientation: _curOrient];
+        [_splash updateOrientation: ConvertToUnityScreenOrientation(toInterfaceOrientation, 0)];
 }
 
 - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
-    {
-        _splash.transform = TransformForOrientation(portrait);
-        _splash.bounds = [[UIScreen mainScreen] bounds];
-    }
+        OrientView(_splash, portrait);
 }
 
 - (BOOL)shouldAutorotate
 {
-    return UnityRequestedScreenOrientation() == autorotation;
+    return _shouldAutorotate;
 }
 
 - (NSUInteger)supportedInterfaceOrientations
 {
     NSUInteger ret = 0;
 
-    // TODO: get rid of copy paste of orientation related code
-    if(UnityRequestedScreenOrientation() == autorotation)
-    {
-        if( UnityIsOrientationEnabled(kAutorotateToPortrait) )              ret |= (1 << UIInterfaceOrientationPortrait);
-        if( UnityIsOrientationEnabled(kAutorotateToPortraitUpsideDown) )    ret |= (1 << UIInterfaceOrientationPortraitUpsideDown);
-        if( UnityIsOrientationEnabled(kAutorotateToLandscapeLeft) )         ret |= (1 << UIInterfaceOrientationLandscapeRight);
-        if( UnityIsOrientationEnabled(kAutorotateToLandscapeRight) )        ret |= (1 << UIInterfaceOrientationLandscapeLeft);
-    }
-    else
-    {
-        switch(UnityRequestedScreenOrientation())
-        {
-            case portrait:              ret = (1 << UIInterfaceOrientationPortrait);            break;
-            case portraitUpsideDown:    ret = (1 << UIInterfaceOrientationPortraitUpsideDown);  break;
-            case landscapeLeft:         ret = (1 << UIInterfaceOrientationLandscapeRight);      break;
-            case landscapeRight:        ret = (1 << UIInterfaceOrientationLandscapeLeft);       break;
-            default:                    ret = (1 << UIInterfaceOrientationPortrait);            break;
-        }
-    }
+    if(_canRotateToPortrait)              ret |= (1 << UIInterfaceOrientationPortrait);
+    if(_canRotateToPortraitUpsideDown)    ret |= (1 << UIInterfaceOrientationPortraitUpsideDown);
+    if(_canRotateToLandscapeLeft)         ret |= (1 << UIInterfaceOrientationLandscapeRight);
+    if(_canRotateToLandscapeRight)        ret |= (1 << UIInterfaceOrientationLandscapeLeft);
 
     return ret;
 }
@@ -179,31 +165,12 @@ static void OrientSplashPhone();
 
 @end
 
-static BOOL Splash_ShouldAutorotateToInterfaceOrientationImpl(id self_, SEL _cmd, UIInterfaceOrientation interfaceOrientation)
-{
-    assert([self_ isKindOfClass:[SplashScreenController class]]);
-
-    EnabledOrientation targetAutorot        = kAutorotateToPortrait;
-    ScreenOrientation  targetOrient         = ConvertToUnityScreenOrientation(interfaceOrientation, &targetAutorot);
-    ScreenOrientation  requestedOrientation = UnityRequestedScreenOrientation();
-
-    if(requestedOrientation != autorotation)
-        return requestedOrientation == targetOrient;
-
-    return UnityIsOrientationEnabled(targetAutorot);
-}
-
 void ShowSplashScreen(UIWindow* window)
 {
     static bool _ClassInited = false;
     if(!_ClassInited)
     {
-        if( UNITY_PRE_IOS6_SDK || !_ios60orNewer )
-        {
-            class_addMethod( [SplashScreenController class], @selector(shouldAutorotateToInterfaceOrientation:),
-                             (IMP)Splash_ShouldAutorotateToInterfaceOrientationImpl, "c12@0:4i8"
-                           );
-        }
+        AddShouldAutorotateToImplIfNeeded([SplashScreenController class], &ShouldAutorotateToInterfaceOrientation_SplashImpl);
         _ClassInited = true;
     }
 
@@ -226,3 +193,20 @@ void HideSplashScreen()
         _controller = nil;
     }
 }
+
+static BOOL
+ShouldAutorotateToInterfaceOrientation_SplashImpl(id self_, SEL _cmd, UIInterfaceOrientation interfaceOrientation)
+{
+    switch(interfaceOrientation)
+    {
+        case UIInterfaceOrientationPortrait:            return _canRotateToPortrait;
+        case UIInterfaceOrientationPortraitUpsideDown:  return _canRotateToPortraitUpsideDown;
+        case UIInterfaceOrientationLandscapeRight:      return _canRotateToLandscapeLeft;
+        case UIInterfaceOrientationLandscapeLeft:       return _canRotateToLandscapeRight;
+
+        default:                                        return false;
+    }
+
+    return false;
+}
+

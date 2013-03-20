@@ -4,6 +4,8 @@
 #include <mach/mach_time.h>
 #include <stdio.h>
 
+#define ENABLE_DETAILED_GC_STATS 0
+
 void*	UnityCreateProfilerCounter( const char* name );
 void	UnityDestroyProfilerCounter( void* counter );
 void	UnityStartProfilerCounter( void* counter );
@@ -44,11 +46,8 @@ struct UnityFrameStats
 
 extern "C"
 {
-	long mono_gc_get_used_size();
-	long mono_gc_get_heap_size();
-
-	extern void* GC_notify_event;
-	extern void* GC_on_heap_resize;
+	int64_t mono_gc_get_used_size();
+	int64_t mono_gc_get_heap_size();
 
 	typedef enum
 	{
@@ -63,6 +62,51 @@ extern "C"
 		MONO_GC_EVENT_PRE_START_WORLD,
 		MONO_GC_EVENT_POST_START_WORLD
 	} MonoGCEvent;
+
+	typedef enum {
+		MONO_PROFILE_NONE = 0,
+		MONO_PROFILE_APPDOMAIN_EVENTS = 1 << 0,
+		MONO_PROFILE_ASSEMBLY_EVENTS  = 1 << 1,
+		MONO_PROFILE_MODULE_EVENTS    = 1 << 2,
+		MONO_PROFILE_CLASS_EVENTS     = 1 << 3,
+		MONO_PROFILE_JIT_COMPILATION  = 1 << 4,
+		MONO_PROFILE_INLINING         = 1 << 5,
+		MONO_PROFILE_EXCEPTIONS       = 1 << 6,
+		MONO_PROFILE_ALLOCATIONS      = 1 << 7,
+		MONO_PROFILE_GC               = 1 << 8,
+		MONO_PROFILE_THREADS          = 1 << 9,
+		MONO_PROFILE_REMOTING         = 1 << 10,
+		MONO_PROFILE_TRANSITIONS      = 1 << 11,
+		MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
+		MONO_PROFILE_COVERAGE         = 1 << 13,
+		MONO_PROFILE_INS_COVERAGE     = 1 << 14,
+		MONO_PROFILE_STATISTICAL      = 1 << 15,
+		MONO_PROFILE_METHOD_EVENTS    = 1 << 16,
+		MONO_PROFILE_MONITOR_EVENTS   = 1 << 17,
+		MONO_PROFILE_IOMAP_EVENTS     = 1 << 18, /* this should likely be removed, too */
+		MONO_PROFILE_GC_MOVES         = 1 << 19,
+		MONO_PROFILE_GC_ROOTS         = 1 << 20
+	} MonoProfileFlags;
+
+	typedef struct _MonoProfiler MonoProfiler;
+
+	typedef void (*MonoProfileFunc) (MonoProfiler *prof);
+	typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);
+	typedef void (*MonoProfileGCMoveFunc)     (MonoProfiler *prof, void **objects, int num);
+	typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size);
+
+	void mono_profiler_install (MonoProfiler *prof, MonoProfileFunc shutdown_callback);
+	void mono_profiler_set_events (MonoProfileFlags events);
+	void mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
+
+	struct _MonoProfiler
+	{
+		int64_t gc_total_time;
+		int64_t gc_mark_time;
+		int64_t gc_reclaim_time;
+		int64_t gc_stop_world_time;
+		int64_t gc_start_world_time;
+	};
 }
 
 extern bool	_ios43orNewer;
@@ -154,25 +198,78 @@ namespace
 
 	struct UnityFrameStats _unityFrameStats;
 
+	MonoProfiler _monoProfiler;
 
-	Prof_Int64 gcstarted = 0;
-	void gccallback(int event)
+	static void gc_event(MonoProfiler *profiler, MonoGCEvent event, int generation)
 	{
-		if (event == MONO_GC_EVENT_START)
-			gcstarted = mach_absolute_time();
-
-		if (event == MONO_GC_EVENT_END)
-		{
-			float delta = mach_absolute_time() - gcstarted;
-			ProfilerBlock_Update(&_GCDurationPB, delta, false);
-			ProfilerBlock_Update(&_GCCountPB, 1, false);
+		switch (event) {
+			case MONO_GC_EVENT_START:
+				profiler->gc_total_time = mach_absolute_time();
+				break;
+			case MONO_GC_EVENT_END:
+			{
+				profiler->gc_total_time = mach_absolute_time() - profiler->gc_total_time;
+				float delta = profiler->gc_total_time;
+				ProfilerBlock_Update(&_GCDurationPB, delta, false);
+				ProfilerBlock_Update(&_GCCountPB, 1, false);
+				break;
+			}
+			case MONO_GC_EVENT_MARK_START:
+				profiler->gc_mark_time = mach_absolute_time();
+				break;
+			case MONO_GC_EVENT_MARK_END:
+				profiler->gc_mark_time = mach_absolute_time() - profiler->gc_mark_time;
+				break;
+			case MONO_GC_EVENT_RECLAIM_START:
+				profiler->gc_reclaim_time = mach_absolute_time();
+				break;
+			case MONO_GC_EVENT_RECLAIM_END:
+				profiler->gc_reclaim_time = mach_absolute_time() - profiler->gc_reclaim_time;
+				break;
+			case MONO_GC_EVENT_PRE_STOP_WORLD:
+				profiler->gc_stop_world_time = mach_absolute_time();
+				break;
+			case MONO_GC_EVENT_POST_STOP_WORLD:
+				profiler->gc_stop_world_time = mach_absolute_time() - profiler->gc_stop_world_time;
+				break;
+			case MONO_GC_EVENT_PRE_START_WORLD:
+				profiler->gc_start_world_time = mach_absolute_time();
+				break;
+			case MONO_GC_EVENT_POST_START_WORLD:
+				profiler->gc_start_world_time = mach_absolute_time() - profiler->gc_start_world_time;
+				break;
+			default:
+				break;
 		}
+		
+#if ENABLE_DETAILED_GC_STATS
+		if (event == MONO_GC_EVENT_END)
+			printf_console("mono-gc>   stop time: %4.1f mark time: %4.1f reclaim time: %4.1f start time: %4.1f total time: %4.1f \n",
+				MachToMillisecondsDelta(profiler->gc_stop_world_time),
+				MachToMillisecondsDelta(profiler->gc_mark_time),
+				MachToMillisecondsDelta(profiler->gc_reclaim_time),
+				MachToMillisecondsDelta(profiler->gc_start_world_time),
+				MachToMillisecondsDelta(profiler->gc_total_time)
+				);
+#endif
+	}
+
+	static void
+	gc_resize (MonoProfiler *profiler, int64_t new_size)
+	{
+	}
+
+	static void
+	profiler_shutdown (MonoProfiler *prof)
+	{
 	}
 }
 
 void Profiler_InitProfiler()
 {
-	GC_notify_event = (void*)gccallback;
+	mono_profiler_install (&_monoProfiler, profiler_shutdown);
+	mono_profiler_install_gc (gc_event, gc_resize);
+	mono_profiler_set_events(MONO_PROFILE_GC);
 	ProfilerInit();
 
 	if( _msaaResolveCounter == 0 )
@@ -273,7 +370,7 @@ Profiler_FrameUpdate(const struct UnityFrameStats* unityFrameStats)
 #endif
 					   (int)_fixedUpdateCountPB.minV, (int)_fixedUpdateCountPB.maxV);
 		printf_console("mono-scripts>  update: %4.1f   fixedUpdate: %4.1f coroutines: %4.1f \n", MachToMillisecondsDelta(_dynamicBehaviourManagerPB.avgV / EachNthFrame), MachToMillisecondsDelta(_fixedBehaviourManagerPB.avgV / EachNthFrame), MachToMillisecondsDelta(_coroutinePB.avgV / EachNthFrame));
-		printf_console("mono-memory>   used heap: %ld allocated heap: %ld  max number of collections: %d collection total duration: %4.1f\n", mono_gc_get_used_size(), mono_gc_get_heap_size(), (int)_GCCountPB.avgV, MachToMillisecondsDelta(_GCDurationPB.avgV));
+		printf_console("mono-memory>   used heap: %lld allocated heap: %lld  max number of collections: %d collection total duration: %4.1f\n", mono_gc_get_used_size(), mono_gc_get_heap_size(), (int)_GCCountPB.avgV, MachToMillisecondsDelta(_GCDurationPB.avgV));
 		printf_console("----------------------------------------\n");
 	}
 	ProfilerBlock_Update(&_framePB, frameDelta, (_frameId == 0));

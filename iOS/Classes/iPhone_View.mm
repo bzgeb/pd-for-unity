@@ -1,8 +1,11 @@
 
 #include "iPhone_View.h"
-#include "UI/SplashScreen.h"
 #include "UI/ActivityIndicator.h"
+#include "UI/Keyboard.h"
+#include "UI/SplashScreen.h"
+#include "UI/UnityViewControllerBase.h"
 #include "iPhone_OrientationSupport.h"
+#include "Unity/DisplayManager.h"
 
 #import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIApplication.h>
@@ -15,16 +18,10 @@ static ScreenOrientation _nativeRequestedOrientation = orientationUnknown;
 extern "C" __attribute__((visibility ("default"))) NSString * const kUnityViewWillRotate = @"kUnityViewWillRotate";
 extern "C" __attribute__((visibility ("default"))) NSString * const kUnityViewDidRotate = @"kUnityViewDidRotate";
 
-static BOOL ShouldAutorotateToInterfaceOrientationImpl(id self, SEL _cmd, UIInterfaceOrientation interfaceOrientation);
-
-struct EAGLSurfaceDesc;
-extern EAGLSurfaceDesc _surface;
-void RecreateSurface(EAGLSurfaceDesc* surface, bool insideRepaint);
-
+static DisplayConnection*   _mainDisplay     = nil;
+static UIViewController*    _viewController = nil;
 
 bool UnityUseAnimatedAutorotation();
-void UnityKeyboardOrientationStep1();
-void UnityKeyboardOrientationStep2();
 
 void UnitySendTouchesBegin(NSSet* touches, UIEvent* event);
 void UnitySendTouchesEnded(NSSet* touches, UIEvent* event);
@@ -33,22 +30,20 @@ void UnitySendTouchesMoved(NSSet* touches, UIEvent* event);
 
 void UnityFinishRendering();
 
-static UIWindow*                _window             = nil;
-static UIViewController*        _viewController     = nil;
-static EAGLView*                _view               = nil;
+
 
 bool _shouldAttemptReorientation = false;
 
-UIWindow*           UnityGetMainWindow()        { return _window; }
+UIWindow*           UnityGetMainWindow()        { return _mainDisplay->window; }
 UIViewController*   UnityGetGLViewController()  { return _viewController; }
-UIView*             UnityGetGLView()            { return _view; }
+UIView*             UnityGetGLView()            { return _mainDisplay->view; }
 ScreenOrientation   UnityCurrentOrientation()   { return _curOrientation; }
 
 
 
 void UnityStartActivityIndicator()
 {
-    ShowActivityIndicator(_view);
+    ShowActivityIndicator(_mainDisplay->view);
 }
 
 void UnityStopActivityIndicator()
@@ -58,26 +53,26 @@ void UnityStopActivityIndicator()
 
 void CreateViewHierarchy()
 {
-    CGRect screenRect = [[UIScreen mainScreen] bounds];
+    _mainDisplay = [[DisplayManager Instance] mainDisplay];
+    [_mainDisplay->window makeKeyAndVisible];
 
-    _window = [[UIWindow alloc] initWithFrame: screenRect];
-    [_window makeKeyAndVisible];
-
-    _view   = [[EAGLView alloc] initWithFrame: screenRect];
-    SetScreenFactorFromScreen(_view);
-
-    if( UNITY_PRE_IOS6_SDK || !_ios60orNewer )
+    static bool _ClassInited = false;
+    if(!_ClassInited)
     {
-        class_addMethod( [UnityViewController class], @selector(shouldAutorotateToInterfaceOrientation:),
-                         (IMP)ShouldAutorotateToInterfaceOrientationImpl, "c12@0:4i8"
-                       );
+        AddOrientationSupportDefaultImpl([UnityViewController class]);
+        _ClassInited = true;
     }
+
     _viewController = [[UnityViewController alloc] init];
     _viewController.wantsFullScreenLayout = TRUE;
-    _viewController.view = _view;
+    _viewController.view = _mainDisplay->view;
 
     [UIView setAnimationsEnabled:NO];
-    ShowSplashScreen(_window);
+
+    ShowSplashScreen(_mainDisplay->window);
+
+    NSNumber* style = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"Unity_LoadingActivityIndicatorStyle"];
+    ShowActivityIndicator([SplashScreen Instance], style ? [style intValue] : -1 );
 }
 
 void ReleaseViewHierarchy()
@@ -88,32 +83,25 @@ void ReleaseViewHierarchy()
     [_viewController release];
     _viewController = nil;
 
-    [_view release];
-    _view = nil;
-
-    [_window release];
-    _window = nil;
 }
 
 static void UpdateOrientationFromController(UIViewController* controller)
 {
-    UIInterfaceOrientation orientIOS = controller.interfaceOrientation;
-    ScreenOrientation orient = ConvertToUnityScreenOrientation(orientIOS,0);
-
-    if( _curOrientation != orient )
+    ScreenOrientation orient = ConvertToUnityScreenOrientation(controller.interfaceOrientation,0);
+    if(orient != _curOrientation)
     {
         _curOrientation = orient;
+
         UnitySetScreenOrientation(_curOrientation);
         if(_curOrientation != portrait)
             OrientTo(_curOrientation);
     }
 }
 
-
-void OnUnityStartLoading()
+void OnUnityInited()
 {
+    // set unity screen orientation, so first level awake get correct values
     UpdateOrientationFromController([SplashScreenController Instance]);
-    ShowActivityIndicator([SplashScreen Instance]);
 }
 
 void OnUnityReady()
@@ -121,10 +109,11 @@ void OnUnityReady()
     UnityStopActivityIndicator();
     HideSplashScreen();
 
-    [_window addSubview: _view];
-    _window.rootViewController = _viewController;
-    [_window bringSubviewToFront: _view];
+    [_mainDisplay->window addSubview: _mainDisplay->view];
+    _mainDisplay->window.rootViewController = _viewController;
+    [_mainDisplay->window bringSubviewToFront: _mainDisplay->view];
 
+    // this is called after level was loaded, so some orientation constraints might have changed
     UpdateOrientationFromController(_viewController);
 
     [UIView setAnimationsEnabled: UnityUseAnimatedAutorotation()];
@@ -153,17 +142,17 @@ void OrientTo(int requestedOrient_)
 
     [CATransaction begin];
     {
-        UnityKeyboardOrientationStep1();
+        [KeyboardDelegate StartReorientation];
 
         UnitySetScreenOrientation(requestedOrient);
-        OrientView(_view, requestedOrient);
+        OrientView(_mainDisplay->view, requestedOrient);
 
         [UIApplication sharedApplication].statusBarOrientation = ConvertToIosScreenOrientation(requestedOrient);
     }
     [CATransaction commit];
 
     [CATransaction begin];
-    UnityKeyboardOrientationStep2();
+    [KeyboardDelegate FinishReorientation];
     [CATransaction commit];
 
     _curOrientation = requestedOrient;
@@ -202,7 +191,7 @@ void CheckOrientationRequest()
 
 float ScreenScaleFactor()
 {
-    return [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [UIScreen mainScreen].scale : 1.0f;
+    return [UIScreen mainScreen].scale;
 }
 
 void SetScreenFactorFromScreen(UIView* view)
@@ -223,60 +212,23 @@ void SetScreenFactorFromScreen(UIView* view)
 - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kUnityViewDidRotate object:self];
-}
 
-- (BOOL)shouldAutorotate
-{
-    return (UnityRequestedScreenOrientation() == autorotation);
-}
-
-- (NSUInteger)supportedInterfaceOrientations
-{
-    NSUInteger ret = 0;
-
-    // TODO: get rid of copy paste of orientation related code
-    if(UnityRequestedScreenOrientation() == autorotation)
+    extern bool _recreateMainView;
+    if(_recreateMainView && self.view == _mainDisplay->view && [self.view isKindOfClass: [MainGLView class]])
     {
-        if( UnityIsOrientationEnabled(kAutorotateToPortrait) )              ret |= (1 << UIInterfaceOrientationPortrait);
-        if( UnityIsOrientationEnabled(kAutorotateToPortraitUpsideDown) )    ret |= (1 << UIInterfaceOrientationPortraitUpsideDown);
-        if( UnityIsOrientationEnabled(kAutorotateToLandscapeLeft) )         ret |= (1 << UIInterfaceOrientationLandscapeRight);
-        if( UnityIsOrientationEnabled(kAutorotateToLandscapeRight) )        ret |= (1 << UIInterfaceOrientationLandscapeLeft);
-    }
-    else
-    {
-        switch(UnityRequestedScreenOrientation())
-        {
-            case portrait:              ret = (1 << UIInterfaceOrientationPortrait);            break;
-            case portraitUpsideDown:    ret = (1 << UIInterfaceOrientationPortraitUpsideDown);  break;
-            case landscapeLeft:         ret = (1 << UIInterfaceOrientationLandscapeRight);      break;
-            case landscapeRight:        ret = (1 << UIInterfaceOrientationLandscapeLeft);       break;
-            default:                    ret = (1 << UIInterfaceOrientationPortrait);            break;
-        }
-    }
+        extern void RecreateMainView();
+        extern void UnityPlayerLoop();
 
-    return ret;
+        RecreateMainView();
+        _recreateMainView = false;
+        UnityPlayerLoop();
+    }
 }
+
 @end
 
-static BOOL ShouldAutorotateToInterfaceOrientationImpl(id self, SEL _cmd, UIInterfaceOrientation interfaceOrientation)
-{
-    EnabledOrientation targetAutorot   = kAutorotateToPortrait;
-    ScreenOrientation  targetOrient    = ConvertToUnityScreenOrientation(interfaceOrientation, &targetAutorot);
-    ScreenOrientation  requestedOrientation = UnityRequestedScreenOrientation();
-
-    if (requestedOrientation != autorotation)
-        return (requestedOrientation == targetOrient);
-
-    return UnityIsOrientationEnabled(targetAutorot);
-}
-
-
-@implementation EAGLView
-
-+ (Class) layerClass
-{
-    return [CAEAGLLayer class];
-}
+@implementation MainGLView
+CGSize surfaceSize;
 
 - (id) initWithFrame:(CGRect)frame
 {
@@ -294,10 +246,10 @@ static BOOL ShouldAutorotateToInterfaceOrientationImpl(id self, SEL _cmd, UIInte
 {
     if (surfaceSize.width != self.bounds.size.width || surfaceSize.height != self.bounds.size.height)
     {
-        extern bool _recreateSurface;
-        _recreateSurface = true;
-
         surfaceSize = self.bounds.size;
+
+        extern bool _recreateMainView;
+        _recreateMainView = true;
     }
 }
 

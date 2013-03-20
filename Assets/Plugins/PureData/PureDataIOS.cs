@@ -1,3 +1,4 @@
+#if UNITY_IPHONE
 using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -15,6 +16,12 @@ public class PureDataIOS {
     
     [DllImport ("__Internal")]
     private static extern void _startAudio();
+
+    [DllImport ("__Internal")]
+    private static extern void _stopAudio();
+
+    [DllImport ("__Internal")]
+    private static extern void _pauseAudio();
     
     [DllImport ("__Internal")]
     private static extern void _sendBangToReceiver(char[] receiver, int length);
@@ -59,11 +66,13 @@ public class PureDataIOS {
     }
 
     public static void pauseAudio() {
-        Debug.Log("pauseAudio Not Implemented");
+        if (Application.platform != RuntimePlatform.OSXEditor)
+            _pauseAudio();
     }
 
     public static void stopAudio() {
-        Debug.Log("stopAudio Not Implemented");
+        if (Application.platform != RuntimePlatform.OSXEditor)
+            _stopAudio();
     }
 
     public static void sendBangToReceiver( string receiver ) {
@@ -124,3 +133,4 @@ public class PureDataIOS {
         }       
     }   
 }
+#endif

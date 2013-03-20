@@ -1,3 +1,4 @@
+#if UNITY_ANDROID
 using UnityEngine;
 using System.Collections;
 
@@ -55,3 +56,4 @@ public class PureDataAndroid {
     public static void sendListToReceiver( ArrayList list, string receiver ) {
     }
 }
+#endif

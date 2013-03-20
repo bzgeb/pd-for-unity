@@ -3,12 +3,10 @@
 
 #import <UIKit/UIKit.h>
 #include "iPhone_Common.h"
+#include "Unity/GlesHelper.h"
 
 
-@interface EAGLView : UIView
-{
-    CGSize surfaceSize;
-}
+@interface MainGLView : GLView {}
 @end
 
 @interface UnityViewController : UIViewController {}
@@ -21,10 +19,9 @@ UIWindow*           UnityGetMainWindow();
 ScreenOrientation   UnityCurrentOrientation();
 
 void    CreateViewHierarchy();
-void    ReleaseViewHierarchy();
-
-void    OnUnityStartLoading();
+void    OnUnityInited();
 void    OnUnityReady();
+void    ReleaseViewHierarchy();
 
 void    CheckOrientationRequest();
 void    OrientTo(int requestedOrient);

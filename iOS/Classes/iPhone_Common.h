@@ -2,6 +2,20 @@
 #ifndef _TRAMPOLINE_IPHONE_COMMON_H_
 #define _TRAMPOLINE_IPHONE_COMMON_H_
 
+#include <stdarg.h>
+
+//------------------------------------------------------------------------------
+
+// magic: ensuring proper compiler/xcode/whatever selection
+#ifndef __clang__
+#error please use clang compiler.
+#endif
+
+// NOT the best way but apple do not care about adding extensions properly
+#if __clang_major__ < 3
+#error please use xcode 4.2 or newer
+#endif
+
 //------------------------------------------------------------------------------
 
 // ios/sdk version
@@ -58,6 +72,27 @@ enum ScreenOrientation
 
 struct UnityFrameStats;
 
+
+enum LogType
+{
+	/// LogType used for Errors.
+	LogType_Error = 0,
+    /// LogType used for Asserts. (These indicate an error inside Unity itself.)
+	LogType_Assert = 1,
+    /// LogType used for Warnings.
+	LogType_Warning = 2,
+    /// LogType used for regular log messages.
+	LogType_Log = 3,
+    /// LogType used for Exceptions.
+	LogType_Exception = 4,
+    /// LogType used for Debug.
+	LogType_Debug = 5,
+	///
+	LogType_NumLevels
+};
+
+typedef void (*LogEntryHandler) (LogType logType, const char* log, va_list list);
+void SetLogEntryHandler(LogEntryHandler newHandler);
 
 //------------------------------------------------------------------------------
 
