@@ -350,7 +350,7 @@ LocationServiceInfo::GetLocationManager()
 
 bool LocationService::IsServiceEnabledByUser()
 {
-	return gLocationServiceStatus.GetLocationManager().locationServicesEnabled;
+	return [CLLocationManager locationServicesEnabled];
 }
 
 

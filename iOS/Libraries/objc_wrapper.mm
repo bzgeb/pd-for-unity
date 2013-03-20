@@ -89,6 +89,16 @@ extern "C" {
     {
         [audioController setActive:YES];
     }
+
+    void _stopAudio()
+    {
+        [audioController setActive:NO];
+    }
+
+    void _pauseAudio()
+    {
+        _stopAudio();
+    }
     
     void _sendBangToReceiver(char * receiver, int length)
     {

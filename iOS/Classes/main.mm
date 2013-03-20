@@ -8,9 +8,12 @@
 // to get this section emitted at right time and so avoid LC_ENCRYPTION_INFO size miscalculation
 static const int constsection = 0;
 bool UnityParseCommandLine(int argc, char *argv[]);
+void UnityInitTrampoline();
 
 int main(int argc, char *argv[])
 {
+	UnityInitTrampoline();
+	
 	if(!UnityParseCommandLine(argc, argv))
 		return -1;
 
