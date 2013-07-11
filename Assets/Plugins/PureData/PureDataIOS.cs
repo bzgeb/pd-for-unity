@@ -49,7 +49,6 @@ public class PureDataIOS {
         if (Application.platform != RuntimePlatform.OSXEditor)
             return _openFile(filename.ToCharArray(), filename.Length * 2);
 
-        //TODO: Return $0
         return 0;
     }
 
