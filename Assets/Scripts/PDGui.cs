@@ -11,7 +11,8 @@ public class PDGui : MonoBehaviour {
 
         GUILayout.Space(15);
         if ( GUILayout.Button( "Close File", GUILayout.Height( 50 ) ) ) {
-            PureData.closeFile("basicsynth.pd");
+            // TODO: Fix closeFile on all platforms
+            // PureData.closeFile("basicsynth.pd");
         }
 
         GUILayout.Space(15);
