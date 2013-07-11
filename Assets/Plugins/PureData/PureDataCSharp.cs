@@ -14,6 +14,9 @@ public class PureDataCSharp {
     [DllImport("libpdcsharp", EntryPoint="libpd_safe_init")]
     private static extern void libpd_init();
 
+    [DllImport("libpdcsharp", EntryPoint="libpd_init_audio")]
+    private static extern int libpd_init_audio(int nInputs, int nOutputs, int sampleRate)
+
     [DllImport("libpdcsharp", EntryPoint="libpd_bang")]
     private static extern int send_bang([In] [MarshalAs(UnmanagedType.LPStr)] string recv);
 
@@ -26,6 +29,7 @@ public class PureDataCSharp {
     [DllImport("libpdcsharp.dll", EntryPoint="libpd_getdollarzero")]
     private static extern  int getdollarzero(IntPtr p) ;
 
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public static int openFile( string filepath ) {
         if( !File.Exists(filepath) ) {
                 throw new FileNotFoundException( filepath );
@@ -44,6 +48,7 @@ public class PureDataCSharp {
         return handle;
     }
 
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public static void closeFile( int handle ) {
         if( !OpenPatches.ContainsKey( handle ) ) return false;
         var ptr = OpenPatches[handle];
@@ -52,12 +57,16 @@ public class PureDataCSharp {
         OpenPatches.Remove( handle );
     }
 
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public static void initPd() {
-
+        libpd_init();
     }
 
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public static void startAudio() {
-
+        if ( libpd_init_audio(2, 2, 48000) != 0 ) {
+            Debug.Log("Failed to init Pd");
+        }
     }
 
     public static void pauseAudio() {
