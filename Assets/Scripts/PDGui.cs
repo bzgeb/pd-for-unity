@@ -2,11 +2,11 @@ using UnityEngine;
 using System.Collections;
 
 public class PDGui : MonoBehaviour {
-    int basicSynthHandle = 0;
+    public static int basicSynthHandle = 0;
     void OnGUI() {
         GUILayout.BeginArea( new Rect(20, 20, Screen.width - 40, 1000) );
         GUILayout.BeginVertical();
-        if ( GUILayout.Button( "Open File", GUILayout.Height( 50 ) ) && basicSynthHandle != 0 ) {
+        if ( GUILayout.Button( "Open File", GUILayout.Height( 50 ) ) && basicSynthHandle == 0 ) {
             basicSynthHandle = PureData.openFile("basicsynth.pd");
         }
 

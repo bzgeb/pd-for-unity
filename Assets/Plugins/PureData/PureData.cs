@@ -6,8 +6,10 @@ using System.Collections;
 using Platform = PureDataAndroid;
 #elif UNITY_IPHONE
 using Platform = PureDataIOS;
-#else
+#elif UNITY_EDITOR || UNITY_STANDALONE
 using Platform = PureDataCSharp;
+#else
+using Platform = PureDataDummy;
 #endif
 
 public class PureData {
