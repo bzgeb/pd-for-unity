@@ -2,17 +2,19 @@ using UnityEngine;
 using System.Collections;
 
 public class PDGui : MonoBehaviour {
+    int basicSynthHandle = 0;
     void OnGUI() {
         GUILayout.BeginArea( new Rect(20, 20, Screen.width - 40, 1000) );
         GUILayout.BeginVertical();
-        if ( GUILayout.Button( "Open File", GUILayout.Height( 50 ) ) ) {
-            PureData.openFile("basicsynth.pd");
+        if ( GUILayout.Button( "Open File", GUILayout.Height( 50 ) ) && basicSynthHandle != 0 ) {
+            basicSynthHandle = PureData.openFile("basicsynth.pd");
         }
 
         GUILayout.Space(15);
         if ( GUILayout.Button( "Close File", GUILayout.Height( 50 ) ) ) {
             // TODO: Fix closeFile on all platforms
-            // PureData.closeFile("basicsynth.pd");
+            PureData.closeFile( basicSynthHandle );
+            basicSynthHandle = 0;
         }
 
         GUILayout.Space(15);
