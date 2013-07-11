@@ -7,19 +7,19 @@ using Platform = PureDataAndroid;
 #elif UNITY_IPHONE
 using Platform = PureDataIOS;
 #else
-using Platform = PureDataDummy;
+using Platform = PureDataCSharp;
 #endif
 
 public class PureData {
 	/* Public interface for use inside C# / JS code */
-	public static void openFile(string filename)
+	public static int openFile( string filename )
 	{
-		Platform.openFile( filename );
+		return Platform.openFile( filename );
 	}
 	
-	public static void closeFile(string filename)
+	public static void closeFile( int handle )
 	{
-		Platform.closeFile( filename );
+		Platform.closeFile( handle );
 	}
 	
 	public static void initPd()

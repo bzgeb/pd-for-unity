@@ -5,12 +5,15 @@ using System.Collections;
 public class PureDataAndroid {
     static AndroidJavaObject PdWrapper;
 
-    public static void openFile( string filename ) {
+    public static int openFile( string filename ) {
         PdWrapper.Call( "openFile", filename );
+        //TODO: Return $0
+        return 0;
     }
 
-    public static void closeFile( string filename ) {
-        PdWrapper.Call( "closeFile", filename );
+    public static void closeFile( int handle ) {
+        //TODO: Fix Android Wrapper to accept handle
+        PdWrapper.Call( "closeFile", handle );
     }
 
     public static void initPd() {

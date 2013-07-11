@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 public class PureDataIOS {
     /* Interface to native implementation */
     [DllImport ("__Internal")]
-    private static extern void _openFile(char[] filename, int filenameLength);
+    private static extern int _openFile(char[] filename, int filenameLength);
     
     [DllImport ("__Internal")]
-    private static extern void _closeFile(char[] filename, int filenameLength);
+    private static extern void _closeFile( int handle );
     
     [DllImport ("__Internal")]
     private static extern void _initPd();
@@ -45,14 +45,19 @@ public class PureDataIOS {
 //  private static extern void _unsubscribe();
 
 
-    public static void openFile( string filename ) {
+    public static int openFile( string filename ) {
         if (Application.platform != RuntimePlatform.OSXEditor)
             _openFile(filename.ToCharArray(), filename.Length * 2);
+
+        //TODO: Return $0
+        return 0;
     }
 
-    public static void closeFile( string filename ) {
+    public static void closeFile( int handle ) {
         if (Application.platform != RuntimePlatform.OSXEditor)
-            _closeFile(filename.ToCharArray(), filename.Length * 2);
+            // _closeFile(filename.ToCharArray(), filename.Length * 2);
+            //TODO: Fix close file to take handle
+            _closeFile( handle );
     }
 
     public static void initPd() {
