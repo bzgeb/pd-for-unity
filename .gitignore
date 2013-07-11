@@ -13,3 +13,4 @@ Temp/*
 *.apk
 *.pbxuser
 *.app
+iOS/Libraries/libiPhone-lib.a
