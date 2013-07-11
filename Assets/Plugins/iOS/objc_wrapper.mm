@@ -26,7 +26,7 @@ extern "C" {
     
     static PdAudioController* audioController;
     
-    void _openFile(char * filename, int length)
+    int _openFile( char * filename, int length )
     {
         NSString* file = [[NSString alloc] initWithData:[NSData dataWithBytes:filename length:length] encoding:NSUTF16LittleEndianStringEncoding];
         NSLog(@"Opening File: %@", file);
@@ -38,20 +38,23 @@ extern "C" {
         NSLog(@"File Exists: %d", fileExists);
         
         NSValue *filePointer = [NSValue valueWithPointer:[PdBase openFile:file path:resourcePath]];
+        int handle = [PdBase dollarZeroForFile: [filePointer pointerValue]];
         
-        [openFiles setObject:filePointer forKey:file];
+        [openFiles setObject:filePointer forKey:[NSNumber numberWithInt:handle]];
         
         [file release];
+
+        return handle;
     }
     
-    void _closeFile(char * filename, int length)
+    void _closeFile( int handle )
     {
-       NSString* file = [[NSString alloc] initWithData:[NSData dataWithBytes:filename length:length] encoding:NSUTF16LittleEndianStringEncoding];
+//       NSString* file = [[NSString alloc] initWithData:[NSData dataWithBytes:filename length:length] encoding:NSUTF16LittleEndianStringEncoding];
        
-       void * filePointer = [[openFiles objectForKey:file] pointerValue];
+       void * filePointer = [[openFiles objectForKey:[NSNumber numberWithInt:handle]] pointerValue];
        
        [PdBase closeFile:filePointer];
-       [openFiles removeObjectForKey:file];
+       [openFiles removeObjectForKey:[NSNumber numberWithInt:handle]];
     }
     
     void _initPd(float newSampleRate, int ticks, int inputChannels, int outputChannels)
