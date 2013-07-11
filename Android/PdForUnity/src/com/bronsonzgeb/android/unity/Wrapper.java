@@ -17,38 +17,32 @@ import android.util.Log;
 
 public class Wrapper {
 	private Activity activity;
-	private Map<String, Integer> openFiles;
 	
 	public Wrapper( Activity currentActivity ) {
 		activity = currentActivity;
-		
-		openFiles = new HashMap<String, Integer>();
 	}
 	
-	public void openFile( String filename ) {
+	public int openFile( String filename ) {
 		Resources res = activity.getResources();
 		File patchFile = null;
-		
+		int handle = 0;
 		try {
 			String baseFilename = filename.split("\\.(?=[^\\.]+$)")[0];
 			int resourceId = res.getIdentifier( baseFilename, "raw", activity.getPackageName());
 			InputStream in = res.openRawResource(resourceId);
 			patchFile = IoUtils.extractResource(in, filename, activity.getCacheDir());
-			int handle = PdBase.openPatch(patchFile);
-			openFiles.put(filename, handle);
+			handle = PdBase.openPatch(patchFile);
 		} catch (IOException e) {
 			Log.e("Unity", e.toString());
 		} finally {
 			if (patchFile != null) patchFile.delete();
 		}
+		
+		return handle;
 	}
 	
-	public void closeFile( String filename ) {
-		Integer handle = openFiles.get( filename );
-		if ( handle != null ) {
-			PdBase.closePatch( handle );
-			openFiles.remove( filename );
-		}
+	public void closeFile( int handle ) {
+		PdBase.closePatch( handle );
 	}
 	
 	public void sendFloat( float f, String receiver ) {
