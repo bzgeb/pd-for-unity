@@ -6,9 +6,8 @@ public class PureDataAndroid {
     static AndroidJavaObject PdWrapper;
 
     public static int openFile( string filename ) {
-        PdWrapper.Call( "openFile", filename );
         //TODO: Return $0
-        return 0;
+        return PdWrapper.Call( "openFile", filename );
     }
 
     public static void closeFile( int handle ) {
